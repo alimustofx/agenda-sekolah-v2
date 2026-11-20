@@ -36,10 +36,10 @@ const saveWeather = () => weather.put('/admin/pengaturan/cuaca', { preserveScrol
                 <div class="field">
                     <span class="field__label">Logo</span>
                     <div class="row"><img v-if="props.school.logo_url" :src="props.school.logo_url" alt="Logo saat ini" style="height: 56px; background: #fff; border: 1px solid var(--sia-stone-200); border-radius: 6px; padding: 4px" />
-                        <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="input" style="max-width: 320px" @change="school.logo = $event.target.files[0] || null" /></div>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" class="input" style="max-width: 320px" @change="school.logo = $event.target.files[0] || null" /></div>
                     <Check v-if="props.school.logo_url" v-model="school.remove_logo" label="Hapus logo saat ini" />
                     <p v-if="school.errors.logo" class="field__error">{{ school.errors.logo }}</p>
-                    <p class="field__hint">PNG, JPG, WebP, atau SVG, maksimal 2 MB. Jalankan <code>php artisan storage:link</code> bila logo tidak tampil.</p>
+                    <p class="field__hint">PNG, JPG, atau WebP, maksimal 2 MB. Jalankan <code>php artisan storage:link</code> bila logo tidak tampil.</p>
                 </div>
                 <div class="row" style="gap: 24px">
                     <div class="field"><label class="field__label" for="pc">Warna utama</label><input id="pc" v-model="school.primary_color" type="color" class="input" /></div>

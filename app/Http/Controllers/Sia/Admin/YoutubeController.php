@@ -46,6 +46,16 @@ class YoutubeController extends Controller
             : 'https://www.youtube.com/playlist?list=' . $parsed['playlist_id'];
         $meta = $yt->metadata($canonical, $videoId);
 
+        // Tolak sumber yang pasti tidak bisa diputar di TV. Jika YouTube tidak dapat dihubungi (status null),
+        // sumber tetap diterima dan admin diberi tahu bahwa pengecekan tidak dilakukan.
+        $label = $data['type'] === 'video' ? 'Video' : 'Playlist';
+        if (in_array($meta['status'], [401, 403], true)) {
+            return back()->withErrors(['url' => "Pemilik {$label} ini menonaktifkan penyematan, sehingga tidak dapat diputar di TV. Pilih sumber lain, atau minta pemiliknya mengaktifkan opsi “Izinkan penyematan”."]);
+        }
+        if (in_array($meta['status'], [400, 404], true)) {
+            return back()->withErrors(['url' => "{$label} tidak ditemukan atau bersifat privat. Gunakan {$label} yang publik atau tidak publik (unlisted)."]);
+        }
+
         $source = YoutubeSource::create([
             'source_type' => $data['type'],
             'title' => $data['title'] ?: ($meta['title'] ?: ($data['type'] === 'video' ? 'Video YouTube' : 'Playlist YouTube')),
@@ -60,7 +70,9 @@ class YoutubeController extends Controller
         ]);
         AuditLog::record('create', 'youtube', 'Menambah ' . $data['type'] . ' YouTube "' . $source->title . '".');
 
-        return back()->with('success', ($data['type'] === 'video' ? 'Video' : 'Playlist') . ' ditambahkan.');
+        $note = $meta['status'] === null ? ' Pengecekan izin penyematan tidak dapat dilakukan (YouTube tidak terjangkau); uji di TV dengan /display?debug.' : '';
+
+        return back()->with('success', $label . ' ditambahkan.' . $note);
     }
 
     public function update(Request $request, YoutubeSource $source)

@@ -61,7 +61,7 @@ const destroy = () => router.delete(`/admin/administrator/${target.value.id}`, {
         <Input v-model="form.name" label="Nama" required :error="form.errors.name" />
         <Input v-model="form.email" type="email" label="Email" required :error="form.errors.email" />
         <Select v-model="form.role" label="Peran" :options="roles" :error="form.errors.role" />
-        <Input v-model="form.password" type="password" autocomplete="new-password" :label="editing ? 'Kata sandi baru' : 'Kata sandi'" :required="!editing" :hint="editing ? 'Kosongkan bila tidak diubah.' : 'Minimal 8 karakter.'" :error="form.errors.password" />
+        <Input v-model="form.password" type="password" autocomplete="new-password" :label="editing ? 'Kata sandi baru' : 'Kata sandi'" :required="!editing" :hint="editing ? 'Kosongkan bila tidak diubah.' : 'Minimal 10 karakter, kombinasi huruf besar, huruf kecil, dan angka.'" :error="form.errors.password" />
         <Check v-if="editing" v-model="form.is_active" label="Akun aktif" description="Akun nonaktif tidak dapat masuk." />
         <template #footer><Button @click="open = false">Batal</Button><Button variant="primary" :disabled="form.processing" @click="save">Simpan</Button></template>
     </Modal>

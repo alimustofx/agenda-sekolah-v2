@@ -28,13 +28,14 @@ class AgendaController extends Controller
         if ($status = $request->query('status')) {
             $query->where('status', $status);
         }
-        if ($date = $request->query('date')) {
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->query('date')) ? $request->query('date') : null;
+        if ($date) {
             $query->whereDate('agenda_date', $date);
         }
 
         return Inertia::render('Sia/Admin/Agenda/Index', [
             'agendas' => $query->paginate(15)->withQueryString()->through(fn ($d) => $d->toSummary()),
-            'filters' => ['q' => $q, 'status' => $request->query('status'), 'date' => $request->query('date')],
+            'filters' => ['q' => $q, 'status' => $request->query('status'), 'date' => $date],
         ]);
     }
 

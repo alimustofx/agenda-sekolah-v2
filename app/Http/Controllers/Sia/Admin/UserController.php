@@ -29,7 +29,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:190', 'unique:users,email'],
             'role' => ['required', 'in:super_admin,admin_humas'],
-            'password' => ['required', Password::min(8)],
+            'password' => ['required', Password::min(10)->letters()->mixedCase()->numbers()],
         ]);
 
         $user = new User();
@@ -49,7 +49,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', 'in:super_admin,admin_humas'],
             'is_active' => ['boolean'],
-            'password' => ['nullable', Password::min(8)],
+            'password' => ['nullable', Password::min(10)->letters()->mixedCase()->numbers()],
         ]);
 
         $isSelf = $user->id === $request->user()->id;

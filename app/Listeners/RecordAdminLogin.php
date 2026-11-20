@@ -11,7 +11,7 @@ class RecordAdminLogin
     public function handle(Login $event): void
     {
         $user = $event->user;
-        if (isset($user->id)) {
+        if (isset($user->id) && $user->is_active) {
             \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update(['last_login_at' => now()]);
             AuditLog::record('login', 'auth', 'Masuk ke dashboard: ' . $user->email);
         }

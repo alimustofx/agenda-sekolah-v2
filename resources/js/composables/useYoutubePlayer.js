@@ -35,6 +35,20 @@ export function useYoutubePlayer(elementId, handlers) {
 
     const clearWatch = () => clearTimeout(watchdog)
 
+    // Daftar video playlist kadang baru terisi beberapa saat setelah CUED: tunggu hingga ~8 detik.
+    function pollPlaylist() {
+        let tries = 0
+        const tick = () => {
+            if (!pending) return
+            const ids = player.getPlaylist?.() || []
+            if (ids.length || ++tries >= 20) {
+                pending(ids)
+                pending = null
+            } else setTimeout(tick, 400)
+        }
+        tick()
+    }
+
     async function init() {
         const ok = await loadApi()
         if (!ok || !window.YT?.Player) {
@@ -59,9 +73,7 @@ export function useYoutubePlayer(elementId, handlers) {
                             clearWatch()
                             handlers.ended?.()
                         } else if (e.data === STATE.CUED && pending) {
-                            const ids = player.getPlaylist?.() || []
-                            pending(ids)
-                            pending = null
+                            pollPlaylist()
                         }
                     },
                     onError: (e) => {

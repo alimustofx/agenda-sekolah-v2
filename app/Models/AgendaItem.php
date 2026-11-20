@@ -60,6 +60,7 @@ class AgendaItem extends Model
             'end_time' => SiaTime::hm($this->end_time),
             'time_description' => $this->time_description,
             'time_label' => $this->timeLabel(),
+            'extra_times' => $this->schedules->map(fn ($s) => self::formatTime($s->start_time, $s->end_time, $s->time_description))->values()->all(),
             'location' => $this->location,
             'description' => $this->description,
             'responsible_label' => $this->responsible_label,

@@ -43,6 +43,12 @@ class Announcement extends Model
         return $query->where(fn ($w) => $w->where('is_active', false)->orWhere('end_at', '<', $now));
     }
 
+    /** Arsip publik: hanya yang masih aktif secara administratif dan masa tayangnya sudah lewat. */
+    public function scopeArchived($query)
+    {
+        return $query->where('is_active', true)->whereNotNull('end_at')->where('end_at', '<', SiaTime::now()->toDateTimeString());
+    }
+
     public function scopeByPriority($query)
     {
         return $query->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('start_at')->orderByDesc('id');

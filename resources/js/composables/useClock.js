@@ -24,6 +24,8 @@ export function useClock(offset) {
         const parts = Object.fromEntries(fmt.formatToParts(new Date(tick.value + (offset.value || 0))).map((p) => [p.type, p.value]))
         const hh = parts.hour, mm = parts.minute, ss = parts.second
         return {
+            hm: `${hh}:${mm}`,
+            ss,
             time: `${hh}:${mm}:${ss}`,
             date: `${parts.weekday}, ${parts.day} ${parts.month} ${parts.year}`,
             minutes: Number(hh) * 60 + Number(mm),

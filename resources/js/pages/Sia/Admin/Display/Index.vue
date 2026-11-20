@@ -21,7 +21,6 @@ const modeList = [
     ['announcement', 'Pengumuman', 'Pengumuman aktif; yang mendesak tayang lebih sering.'],
     ['activity', 'Kegiatan berlangsung', 'Kegiatan sekolah yang sedang berlangsung.'],
     ['school_info', 'Informasi sekolah', 'Teks informasi tetap yang diisi di bawah.'],
-    ['weather', 'Cuaca', 'Perlu cuaca aktif di Pengaturan dan di bawah.'],
 ]
 function toggleMode(k, on) {
     form.panel_modes = on ? [...new Set([...form.panel_modes, k])] : form.panel_modes.filter((m) => m !== k)
@@ -74,7 +73,7 @@ onBeforeUnmount(() => ro?.disconnect())
                         <legend>Konten yang bergantian di panel</legend>
                         <Check v-for="[k, l, d] in modeList" :key="k" :model-value="form.panel_modes.includes(k)" :label="l" :description="d" @update:model-value="toggleMode(k, $event)" />
                     </fieldset>
-                    <Check v-model="form.weather_enabled" label="Tampilkan cuaca" />
+                    <Check v-model="form.weather_enabled" label="Tampilkan cuaca di header TV" description="Perlu integrasi cuaca aktif di menu Pengaturan." />
                     <Input v-model="form.school_info_text" as="textarea" :rows="3" label="Informasi sekolah" hint="Contoh: visi, motto, atau tata tertib singkat. Satu butir per tayang." :error="form.errors.school_info_text" />
                 </div>
             </section>
@@ -89,7 +88,7 @@ onBeforeUnmount(() => ro?.disconnect())
         <aside class="editor-side">
             <h2 class="field__label" style="margin-bottom: 8px">Pratinjau (data terbitan saat ini)</h2>
             <div ref="box" style="position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--sia-stone-200); border-radius: 10px; background: var(--sia-navy-950)">
-                <iframe src="/display" title="Pratinjau TV Display" tabindex="-1" :style="{ width: '1920px', height: '1080px', border: 0, transform: `scale(${scale})`, transformOrigin: 'top left', pointerEvents: 'none' }" />
+                <iframe src="/display?preview" title="Pratinjau TV Display" tabindex="-1" :style="{ width: '1920px', height: '1080px', border: 0, transform: `scale(${scale})`, transformOrigin: 'top left', pointerEvents: 'none' }" />
             </div>
             <p class="muted small" style="margin-top: 8px">Pratinjau memuat ulang setelah halaman ini dimuat ulang. Video dibisukan.</p>
         </aside>

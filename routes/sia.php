@@ -5,6 +5,7 @@ use App\Http\Controllers\Sia\DisplayController;
 use App\Http\Controllers\Sia\PublicController;
 use App\Http\Middleware\Sia\EnsureActiveAdmin;
 use App\Http\Middleware\Sia\EnsureRole;
+use App\Http\Middleware\Sia\SecurityHeaders;
 use App\Http\Middleware\Sia\ShareSiaData;
 use Illuminate\Support\Facades\Route;
 
@@ -31,7 +32,7 @@ Route::middleware(ShareSiaData::class)->group(function () {
 | Dashboard admin (Super Admin & Admin Humas)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', EnsureActiveAdmin::class, ShareSiaData::class])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', EnsureActiveAdmin::class, ShareSiaData::class, SecurityHeaders::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
 
     // Agenda

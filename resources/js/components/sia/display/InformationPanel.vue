@@ -1,45 +1,48 @@
 <script setup>
-const props = defineProps({ item: Object, school: Object })
+import { computed } from 'vue'
+
+const props = defineProps({ item: Object, school: Object, index: Number, total: Number })
 const flag = { important: 'Penting', urgent: 'Mendesak' }
+
+// Teks pendek dibuat lebih besar, teks panjang sedikit lebih kecil agar ruang terisi seimbang.
+const size = computed(() => {
+    const i = props.item
+    const len = [i.title, i.content, i.description, i.text].filter(Boolean).join(' ').length
+    return len < 130 ? 'tv-notice--lg' : len > 340 ? 'tv-notice--sm' : ''
+})
 </script>
 
 <template>
-    <div class="tv-info">
+    <div class="tv-notice" :class="size">
+        <div class="tv-notice__top">
+            <span class="tv-notice__kind">{{ { announcement: 'Pengumuman', activity: 'Kegiatan berlangsung', school_info: 'Informasi sekolah' }[item.kind] || 'Selamat datang' }}</span>
+            <span v-if="total > 1" class="tv-notice__count">{{ index + 1 }} dari {{ total }}</span>
+        </div>
+
         <template v-if="item.kind === 'announcement'">
-            <div class="tv-info__kind">Pengumuman</div>
-            <span v-if="flag[item.priority]" class="tv-status tv-info__flag" :class="`tv-status--${item.priority}`">{{ flag[item.priority] }}</span>
-            <h2 class="tv-info__title">{{ item.title }}</h2>
-            <p class="tv-info__body" style="white-space: pre-line">{{ item.content }}</p>
-            <div class="tv-info__meta">{{ item.date }}</div>
+            <span v-if="flag[item.priority]" class="tv-flag" :class="`tv-flag--${item.priority}`">{{ flag[item.priority] }}</span>
+            <h2 class="tv-notice__title">{{ item.title }}</h2>
+            <p class="tv-notice__body">{{ item.content }}</p>
+            <div class="tv-notice__meta">{{ item.date }}<template v-if="item.category">, {{ item.category }}</template></div>
         </template>
 
         <template v-else-if="item.kind === 'activity'">
-            <div class="tv-info__kind">Kegiatan berlangsung</div>
-            <h2 class="tv-info__title">{{ item.title }}</h2>
-            <p v-if="item.description" class="tv-info__body" style="-webkit-line-clamp: 5">{{ item.description }}</p>
-            <div class="tv-info__meta">
+            <h2 class="tv-notice__title">{{ item.title }}</h2>
+            <p v-if="item.description" class="tv-notice__body">{{ item.description }}</p>
+            <div class="tv-notice__meta">
                 <div><b>{{ item.time_label }}</b></div>
-                <div v-if="item.location" style="margin-top: 6px">{{ item.location }}</div>
-                <div v-if="item.responsible_person" style="margin-top: 6px">Penanggung jawab: {{ item.responsible_person }}</div>
+                <div v-if="item.location">{{ item.location }}</div>
+                <div v-if="item.responsible_person">Penanggung jawab: {{ item.responsible_person }}</div>
             </div>
         </template>
 
-        <template v-else-if="item.kind === 'weather'">
-            <div class="tv-info__kind">Cuaca</div>
-            <h2 class="tv-info__title" style="font-size: 30px">{{ item.location }}</h2>
-            <div class="tv-weather"><span class="tv-weather__temp tv-num">{{ item.temperature }}°C</span><span class="tv-weather__cond">{{ item.condition }}</span></div>
-            <div class="tv-info__meta"><span v-if="item.humidity !== null && item.humidity !== undefined">Kelembapan {{ item.humidity }}%. </span>Diperbarui {{ item.updated_at }}</div>
-        </template>
-
         <template v-else-if="item.kind === 'school_info'">
-            <div class="tv-info__kind">Informasi sekolah</div>
-            <p class="tv-info__title" style="font-weight: 600">{{ item.text }}</p>
+            <p class="tv-notice__quote">{{ item.text }}</p>
         </template>
 
         <template v-else>
-            <div class="tv-info__kind">{{ school.name }}</div>
-            <h2 class="tv-info__title">Selamat datang</h2>
-            <p class="tv-info__body">{{ school.tagline || 'Informasi kegiatan sekolah ditampilkan di layar ini.' }}</p>
+            <h2 class="tv-notice__title">{{ school.name }}</h2>
+            <p class="tv-notice__body">{{ school.tagline || 'Informasi kegiatan sekolah ditampilkan di layar ini.' }}</p>
         </template>
     </div>
 </template>

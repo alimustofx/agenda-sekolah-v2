@@ -4,14 +4,17 @@ import InformationPanel from './InformationPanel.vue'
 import { useYoutubePlayer } from '../../../composables/useYoutubePlayer'
 
 /**
- * Panel kanan TV: video YouTube dan panel informasi bergantian.
- * Alur: video selesai -> informasi (durasi jeda) -> video berikutnya. Tidak pernah menampilkan player kosong.
+ * Rel kanan TV. Jendela video 16:9 di atas, pengumuman/informasi bergantian di bawah.
+ * Video selesai -> jendela menampilkan layar identitas sekolah selama jeda -> video berikutnya.
+ * Jendela tidak pernah kosong dan informasi selalu terlihat.
  */
 const props = defineProps({ data: Object })
 
+const ROTATE_SEC = 15
 const school = computed(() => props.data.school)
 const yt = computed(() => props.data.youtube.settings)
 const display = computed(() => props.data.display)
+const initials = computed(() => (school.value.name || 'SMA').split(' ').filter((w) => /^[A-Za-z0-9]/.test(w)).map((w) => (/^\d/.test(w) ? w : w[0])).join('').slice(0, 3).toUpperCase())
 
 // ------------------------------------------------------------------ informasi
 const infoItems = computed(() => {
@@ -24,7 +27,6 @@ const infoItems = computed(() => {
     if (modes.includes('school_info') && d.display.school_info) {
         d.display.school_info.split('\n').map((t) => t.trim()).filter(Boolean).forEach((t, i) => base.push({ kind: 'school_info', id: 'si' + i, text: t }))
     }
-    if (modes.includes('weather') && d.weather) base.push({ ...d.weather, kind: 'weather', id: 'weather' })
     if (!urgent.length) return base
     if (!base.length) return urgent
     // Informasi mendesak disisipkan di antara konten lain sehingga tayang lebih sering.
@@ -33,18 +35,22 @@ const infoItems = computed(() => {
     return out
 })
 const infoIdx = ref(0)
-const infoItem = computed(() => (infoItems.value.length ? infoItems.value[infoIdx.value % infoItems.value.length] : { kind: 'welcome', id: 'welcome' }))
-const infoKey = computed(() => `${infoItem.value.kind}-${infoItem.value.id ?? ''}-${infoItem.value.title ?? infoItem.value.text ?? ''}`)
+const infoTotal = computed(() => infoItems.value.length)
+const infoPos = computed(() => (infoTotal.value ? infoIdx.value % infoTotal.value : 0))
+const infoItem = computed(() => (infoTotal.value ? infoItems.value[infoPos.value] : { kind: 'welcome', id: 'welcome' }))
+const infoKey = computed(() => `${infoItem.value.kind}-${infoItem.value.id ?? ''}-${infoItem.value.title ?? infoItem.value.text ?? ''}-${infoIdx.value}`)
 
 // ------------------------------------------------------------------ antrean video
-const mode = ref('info') // 'info' | 'video'
+const mode = ref('slate') // 'slate' | 'video'
 const queue = ref([])
 const cursor = ref(0)
 const current = ref(null)
 const cooldown = ref(false)
-const lastError = ref('-')
-const debug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
 const finished = ref(false)
+const lastError = ref('-')
+const query = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()
+const debug = query.has('debug')
+const preview = query.has('preview') // pratinjau di dashboard: selalu dibisukan
 const resolved = reactive({})
 let errorStreak = 0
 let intermissionTimer = null
@@ -81,7 +87,7 @@ function buildQueue() {
     return yt.value.shuffle ? shuffle(out) : out
 }
 
-// Hanya susun ulang bila sumber/mode benar-benar berubah; pembaruan agenda tidak menyentuh pemutar.
+// Hanya susun ulang bila sumber/mode berubah; pembaruan agenda tidak menyentuh pemutar.
 const queueSig = computed(() => JSON.stringify([yt.value.mode, yt.value.shuffle, props.data.youtube.sources.map((s) => [s.id, s.type, s.video_id, s.playlist_id, s.videos?.length])]))
 function rebuild() {
     const curId = current.value?.id
@@ -101,7 +107,7 @@ const player = useYoutubePlayer('tv-yt-player', {
     ended: () => handleEnded(),
     failed: (code) => handleFailed(code),
 })
-const audio = () => ({ muted: yt.value.muted, volume: yt.value.volume })
+const audio = () => ({ muted: preview || yt.value.muted, volume: yt.value.volume })
 
 async function startPlayback() {
     clearTimeout(intermissionTimer)
@@ -125,7 +131,7 @@ function advance() {
     if (cursor.value >= queue.value.length) {
         if (!yt.value.loop) {
             finished.value = true
-            mode.value = 'info'
+            mode.value = 'slate'
             return
         }
         cursor.value = 0
@@ -136,16 +142,12 @@ function advance() {
 
 function handleEnded() {
     errorStreak = 0
-    if (yt.value.intermission && display.value.information_panel) {
-        infoIdx.value++
-        mode.value = 'info'
-        intermissionTimer = setTimeout(advance, yt.value.intermission_duration * 1000)
-    } else {
-        advance()
-    }
+    mode.value = 'slate'
+    if (yt.value.intermission) intermissionTimer = setTimeout(advance, yt.value.intermission_duration * 1000)
+    else advance()
 }
 
-// Video bermasalah: lewati. Jika semua gagal, istirahat 5 menit dan tampilkan informasi.
+// Video bermasalah: lewati. Jika semua gagal, istirahat 5 menit (jendela menampilkan identitas sekolah).
 function handleFailed(code) {
     lastError.value = code ?? 'tidak-diketahui'
     if (code === 'player-belum-siap') return // bukan kegagalan video: tunggu pemutar siap
@@ -153,7 +155,7 @@ function handleFailed(code) {
     if (errorStreak >= Math.max(2, queue.value.length)) {
         errorStreak = 0
         cooldown.value = true
-        mode.value = 'info'
+        mode.value = 'slate'
         clearTimeout(cooldownTimer)
         cooldownTimer = setTimeout(() => {
             cooldown.value = false
@@ -177,23 +179,18 @@ async function maybeStart() {
 watch(queueSig, () => {
     rebuild()
     if (!videoWanted.value) {
-        mode.value = 'info'
+        mode.value = 'slate'
         player.stop()
     } else if (mode.value !== 'video' && !intermissionTimer) maybeStart()
 })
 watch(videoWanted, (v) => {
     if (v) maybeStart()
     else {
-        mode.value = 'info'
+        mode.value = 'slate'
         player.stop()
     }
 })
-watch(() => [yt.value.muted, yt.value.volume], () => player.setAudio(yt.value.muted, yt.value.volume))
-watch(mode, (m) => {
-    clearInterval(rotateTimer)
-    // Selama informasi tampil lama, rotasi konten tiap 25 detik.
-    if (m === 'info') rotateTimer = setInterval(() => infoIdx.value++, 25000)
-}, { immediate: true })
+watch(() => [yt.value.muted, yt.value.volume], () => player.setAudio(preview || yt.value.muted, yt.value.volume))
 
 const host = ref(null)
 onMounted(() => {
@@ -202,32 +199,40 @@ onMounted(() => {
     host.value.appendChild(target)
     rebuild()
     maybeStart()
+    rotateTimer = setInterval(() => infoIdx.value++, ROTATE_SEC * 1000)
 })
 onBeforeUnmount(() => {
     clearTimeout(intermissionTimer)
     clearTimeout(cooldownTimer)
     clearInterval(rotateTimer)
 })
+
+const caption = computed(() => {
+    if (mode.value === 'video') return ['Sedang diputar', current.value?.title]
+    if (queue.value.length) return ['Jeda', 'Video berikutnya segera diputar']
+    return ['', `Selamat datang di ${school.value.name}`]
+})
 </script>
 
 <template>
-    <section class="tv-panel" aria-label="Media dan informasi">
-        <div class="tv-panel__layer" :data-hidden="mode !== 'video'">
-            <div class="tv-video">
-                <div ref="host" class="tv-video__frame" />
-                <div class="tv-video__caption">
-                    <div class="tv-video__label">Sedang diputar</div>
-                    <div class="tv-video__title">{{ current?.title }}</div>
-                </div>
+    <aside class="tv-rail" aria-label="Media dan informasi">
+        <div class="tv-media">
+            <div ref="host" class="tv-media__video" :data-hidden="mode !== 'video'" />
+            <div class="tv-slate" :data-hidden="mode === 'video'">
+                <div class="tv-slate__logo"><img v-if="school.logo_url" :src="school.logo_url" alt="" /><template v-else>{{ initials }}</template></div>
+                <div class="tv-slate__name">{{ school.name }}</div>
+                <div class="tv-slate__sub">{{ school.tagline || 'Pusat Informasi Sekolah' }}</div>
             </div>
         </div>
-        <div class="tv-panel__layer" :data-hidden="mode !== 'info'">
-            <Transition name="tv-fade" mode="out-in">
-                <InformationPanel :key="infoKey" :item="infoItem" :school="school" />
-            </Transition>
-        </div>
-        <div v-if="debug" style="position: absolute; left: 12px; top: 12px; z-index: 5; background: rgba(0, 0, 0, 0.8); color: #fff; font: 15px/1.4 monospace; padding: 6px 10px; border-radius: 6px">
+        <div class="tv-caption"><span v-if="caption[0]">{{ caption[0] }}</span><b>{{ caption[1] }}</b></div>
+
+        <Transition name="tv-fade" mode="out-in">
+            <InformationPanel :key="infoKey" :item="infoItem" :school="school" :index="infoPos" :total="infoTotal" />
+        </Transition>
+        <div :key="'bar' + infoIdx" class="tv-rail__bar" :style="{ '--tv-dur': ROTATE_SEC + 's' }" />
+
+        <div v-if="debug" style="position: absolute; left: 36px; top: 36px; z-index: 5; background: rgba(0, 0, 0, 0.8); color: #fff; font: 15px/1.4 monospace; padding: 6px 10px; border-radius: 6px">
             antrean {{ queue.length }} | mode {{ mode }} | error {{ lastError }} | api {{ player.available.value ? 'ok' : 'gagal' }} | siap {{ player.ready.value ? 'ya' : 'tidak' }}
         </div>
-    </section>
+    </aside>
 </template>

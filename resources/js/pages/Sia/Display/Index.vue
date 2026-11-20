@@ -2,8 +2,8 @@
 import '../../../../css/sia.css'
 import '../../../../css/tv.css'
 import { Head } from '@inertiajs/vue3'
-import BareLayout from '../../../components/sia/layout/BareLayout.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import BareLayout from '../../../components/sia/layout/BareLayout.vue'
 import { useDisplayData } from '../../../composables/useDisplayData'
 import { useClock } from '../../../composables/useClock'
 import DisplayHeader from '../../../components/sia/display/DisplayHeader.vue'
@@ -16,11 +16,19 @@ const props = defineProps({ initial: Object })
 const { data, offset, stale } = useDisplayData(props.initial)
 const clock = useClock(offset)
 
-// Kanvas acuan 1920×1080 diskalakan proporsional ke layar mana pun.
-const view = ref({ s: 1, x: 0, y: 0 })
+// Lebar acuan 1920 diskalakan ke lebar layar; tinggi kanvas mengikuti rasio layar sehingga
+// tidak ada sisa ruang di atas/bawah. Pada layar sangat lebar, skala mengikuti tinggi (min. 880).
+const view = ref({ s: 1, w: 1920, h: 1080 })
 function fit() {
-    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080)
-    view.value = { s, x: (window.innerWidth - 1920 * s) / 2, y: (window.innerHeight - 1080 * s) / 2 }
+    let s = window.innerWidth / 1920
+    let w = 1920
+    let h = window.innerHeight / s
+    if (h < 880) {
+        s = window.innerHeight / 880
+        w = window.innerWidth / s
+        h = 880
+    }
+    view.value = { s, w, h }
 }
 
 // Jaga layar tetap menyala dan muat ulang berkala (hanya bila koneksi sehat) agar stabil berhari-hari.
@@ -55,8 +63,8 @@ const showTicker = computed(() => data.value.display.running_text)
 <template>
     <Head title="TV Display" />
     <div class="sia tv-viewport">
-        <div class="tv-stage" :style="{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})`, gridTemplateRows: showTicker ? '100px 1fr 65px' : '100px 1fr' }">
-            <DisplayHeader :school="data.school" :clock="clock" />
+        <div class="tv-stage" :style="{ width: view.w + 'px', height: view.h + 'px', transform: `scale(${view.s})`, gridTemplateRows: showTicker ? '104px minmax(0, 1fr) 64px' : '104px minmax(0, 1fr)' }">
+            <DisplayHeader :school="data.school" :clock="clock" :weather="data.weather" />
             <main class="tv-main" :class="{ 'tv-main--solo': !showPanel }">
                 <AgendaDisplay :agenda="data.agenda" :settings="{ ...data.display, title: data.display.title }" :clock="clock" />
                 <MediaPanel v-if="showPanel" :data="data" />

@@ -45,10 +45,11 @@ class YoutubeService
     /** Metadata lewat oEmbed (tanpa API key). Gagal tidak menghentikan proses. */
     public function metadata(string $url, ?string $videoId): array
     {
-        $meta = ['title' => null, 'channel' => null, 'thumbnail_url' => $videoId ? "https://i.ytimg.com/vi/{$videoId}/hqdefault.jpg" : null, 'duration' => null];
+        $meta = ['status' => null, 'title' => null, 'channel' => null, 'thumbnail_url' => $videoId ? "https://i.ytimg.com/vi/{$videoId}/hqdefault.jpg" : null, 'duration' => null];
 
         try {
             $res = Http::timeout(6)->get('https://www.youtube.com/oembed', ['url' => $url, 'format' => 'json']);
+            $meta['status'] = $res->status(); // 200 ok, 401/403 penyematan dimatikan, 404 privat/tidak ada
             if ($res->ok()) {
                 $meta['title'] = $res->json('title');
                 $meta['channel'] = $res->json('author_name');

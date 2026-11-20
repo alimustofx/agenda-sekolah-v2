@@ -29,7 +29,9 @@ class SiaSeeder extends Seeder
             $user = User::firstOrNew(['email' => $email]);
             $user->forceFill(['name' => $name, 'role' => $role, 'is_active' => true, 'email_verified_at' => now()]);
             if (! $user->exists) {
-                $user->password = Hash::make('ChangeMe123!');
+                $plain = env('SIA_ADMIN_PASSWORD') ?: Str::password(16, symbols: false);
+                $user->password = Hash::make($plain);
+                $this->command?->warn("Akun {$email} dibuat. Kata sandi: {$plain}  (catat sekarang, tidak ditampilkan lagi)");
             }
             $user->save();
         }

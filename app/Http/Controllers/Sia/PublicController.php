@@ -45,7 +45,7 @@ class PublicController extends Controller
         $today = SiaTime::today()->toDateString();
         $scope = in_array($request->query('scope'), ['mendatang', 'lalu', 'semua']) ? $request->query('scope') : 'mendatang';
         $q = trim((string) $request->query('q', ''));
-        $date = $request->query('date');
+        $date = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->query('date')) ? $request->query('date') : null;
         $category = $request->query('category');
 
         $query = AgendaDay::query()->publishedFor('website')->withCount('items');
@@ -87,7 +87,7 @@ class PublicController extends Controller
 
     public function calendar(Request $request)
     {
-        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->query('bulan')) ? $request->query('bulan') : SiaTime::today()->format('Y-m');
+        $month = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $request->query('bulan')) ? $request->query('bulan') : SiaTime::today()->format('Y-m');
         $first = Carbon::createFromFormat('Y-m-d', $month . '-01', SiaTime::tz())->startOfDay();
         $last = $first->copy()->endOfMonth();
 
@@ -118,7 +118,7 @@ class PublicController extends Controller
         $query = Announcement::query()->where('show_on_website', true);
 
         if ($archive) {
-            $query->expired()->orderByDesc('end_at')->orderByDesc('id');
+            $query->archived()->orderByDesc('end_at')->orderByDesc('id');
         } else {
             $query->active('website')->byPriority();
         }
@@ -131,7 +131,8 @@ class PublicController extends Controller
 
     public function announcementShow(Announcement $announcement)
     {
-        abort_unless($announcement->show_on_website, 404);
+        $started = ! $announcement->getRawOriginal('start_at') || $announcement->getRawOriginal('start_at') <= SiaTime::now()->toDateTimeString();
+        abort_unless($announcement->show_on_website && $announcement->is_active && $started, 404);
 
         return Inertia::render('Sia/Public/Announcements/Show', [
             'announcement' => $announcement->toPublic() + ['state' => $announcement->stateLabel()],
