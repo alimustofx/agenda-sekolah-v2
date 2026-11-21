@@ -170,6 +170,16 @@ class WhatsAppAgendaParser
         $statuses['title'] = $meta['title']
             ? ['state' => 'ok']
             : ['state' => 'warn', 'message' => 'Judul tidak ditemukan. Judul bawaan dipakai, ubah jika perlu.'];
+        // Jaring pengaman: banyak baris berjam tetapi sedikit kegiatan = kemungkinan ada yang terlewat.
+        $timeLines = 0;
+        for ($i = 0; $i < min($cutoff, $n); $i++) {
+            if (! $skip[$i] && trim($lines[$i]) !== '' && $this->findTimes($lines[$i])) {
+                $timeLines++;
+            }
+        }
+        if ($timeLines > count($items)) {
+            $statuses['coverage'] = ['state' => 'warn', 'message' => "Teks memuat {$timeLines} baris berisi jam, tetapi hanya " . count($items) . ' kegiatan dikenali. Mungkin ada kegiatan yang terlewat; periksa teks asli di sebelah kiri.'];
+        }
         if (! $items) {
             $statuses['items'] = ['state' => 'missing', 'message' => 'Tidak ada kegiatan yang dikenali. Tambahkan kegiatan secara manual.'];
         }

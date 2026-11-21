@@ -12,6 +12,7 @@ return [
         'driver' => env('SIA_AI_DRIVER', 'anthropic'), // anthropic | openai | gemini
         'model' => env('SIA_AI_MODEL'),                 // kosong = model bawaan tiap penyedia
         'key' => env('SIA_AI_KEY'),
+        'timeout' => (int) env('SIA_AI_TIMEOUT', 90), // detik
         'class' => \App\Services\Parser\LlmAgendaRefiner::class,
     ],
 

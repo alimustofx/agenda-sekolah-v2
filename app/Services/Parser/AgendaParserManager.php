@@ -15,6 +15,7 @@ class AgendaParserManager
 
         if ($allowAi && config('sia.ai_parser.enabled') && $this->needsRefinement($result)) {
             try {
+                @set_time_limit(180); // panggilan AI dapat memakan waktu lebih lama dari batas bawaan PHP
                 $refined = app(config('sia.ai_parser.class'))->refine($text, $result);
                 $refined['summary'] = WhatsAppAgendaParser::summarize($refined);
                 $refined['parser_type'] = 'hybrid';
@@ -32,7 +33,7 @@ class AgendaParserManager
     /** AI dipanggil hanya bila ada ketidakpastian pada tanggal, judul, atau waktu. */
     private function needsRefinement(array $result): bool
     {
-        if (empty($result['items'])) {
+        if (empty($result['items']) || isset($result['statuses']['coverage'])) {
             return true;
         }
         if (($result['statuses']['agenda_date']['state'] ?? 'ok') !== 'ok') {

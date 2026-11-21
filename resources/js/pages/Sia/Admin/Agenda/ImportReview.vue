@@ -17,11 +17,14 @@ const props = defineProps({ logId: Number, original: String, parserType: String,
         <Button href="/admin/agenda/import">Ulangi import</Button>
     </PageHeader>
 
+    <p v-if="statuses.coverage" class="alert alert--warn" style="margin-bottom: 16px" role="alert">{{ statuses.coverage.message }}</p>
+
     <div class="row" style="margin-bottom: 20px; gap: 8px">
-        <ParsingFieldStatus state="ok" :label="`${summary.ok} dikenali`" />
-        <ParsingFieldStatus state="warn" :label="`${summary.warn} perlu diperiksa`" />
-        <ParsingFieldStatus state="missing" :label="`${summary.missing} belum lengkap`" />
-        <ParsingFieldStatus v-if="summary.invalid" state="invalid" :label="`${summary.invalid} tidak valid`" />
+        <strong style="color: var(--sia-stone-900)">{{ agenda.items.length }} kegiatan terdeteksi</strong>
+        <ParsingFieldStatus state="ok" :label="`${summary.ok} kolom dikenali`" />
+        <ParsingFieldStatus state="warn" :label="`${summary.warn} kolom perlu diperiksa`" />
+        <ParsingFieldStatus state="missing" :label="`${summary.missing} kolom belum lengkap`" />
+        <ParsingFieldStatus v-if="summary.invalid" state="invalid" :label="`${summary.invalid} kolom tidak valid`" />
         <ParsingFieldStatus v-if="parserType === 'hybrid'" state="ok" label="Dibantu AI" />
         <span class="muted small">Penanda hanya membantu validasi, bukan jaminan benar atau salah.</span>
     </div>

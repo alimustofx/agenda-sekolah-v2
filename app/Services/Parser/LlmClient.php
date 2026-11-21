@@ -12,7 +12,7 @@ class LlmClient
     private const DEFAULT_MODELS = [
         'anthropic' => 'claude-haiku-5-5',
         'openai' => 'gpt-4o-mini',
-        'gemini' => 'gemini-3.8-flash',
+        'gemini' => 'gemini-2.0-flash',
     ];
 
     public function driver(): string
@@ -38,7 +38,7 @@ class LlmClient
         }
         $driver = $this->driver();
         $model = $this->model();
-        $http = Http::timeout(45)->retry(1, 500, throw: false)->acceptJson();
+        $http = Http::timeout(max(10, (int) config('sia.ai_parser.timeout', 90)))->connectTimeout(10)->acceptJson();
 
         switch ($driver) {
             case 'anthropic':
