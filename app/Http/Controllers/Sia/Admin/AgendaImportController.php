@@ -9,15 +9,19 @@ use App\Models\AgendaDay;
 use App\Models\AuditLog;
 use App\Models\ParserLog;
 use App\Services\Parser\AgendaParserManager;
+use App\Services\Parser\LlmClient;
 use App\Services\Sia\AgendaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AgendaImportController extends Controller
 {
-    public function create()
+    public function create(LlmClient $llm)
     {
-        return Inertia::render('Sia/Admin/Agenda/Import');
+        return Inertia::render('Sia/Admin/Agenda/Import', [
+            'aiEnabled' => (bool) config('sia.ai_parser.enabled') && $llm->configured(),
+            'aiDriver' => $llm->driver(),
+        ]);
     }
 
     public function store(Request $request, AgendaParserManager $parser)
@@ -27,7 +31,7 @@ class AgendaImportController extends Controller
             'text.min' => 'Teks terlalu pendek untuk dibaca sebagai agenda.',
         ]);
 
-        $result = $parser->parse($data['text']);
+        $result = $parser->parse($data['text'], $request->boolean('use_ai', true));
         $log = ParserLog::create([
             'user_id' => $request->user()->id,
             'original_text' => $data['text'],
@@ -35,7 +39,7 @@ class AgendaImportController extends Controller
             'parsing_result' => $result,
             'confidence_summary' => $result['summary'],
         ]);
-        AuditLog::record('parse', 'agenda', 'Memproses teks WhatsApp menjadi agenda (' . count($result['items']) . ' kegiatan terdeteksi).');
+        AuditLog::record('parse', 'agenda', 'Memproses teks WhatsApp menjadi agenda (' . count($result['items']) . ' kegiatan terdeteksi, parser: ' . $result['parser_type'] . ').');
 
         return redirect()->route('admin.agenda.import.review', $log);
     }
@@ -49,6 +53,7 @@ class AgendaImportController extends Controller
             'logId' => $log->id,
             'original' => $log->original_text,
             'parserType' => $log->parser_type,
+            'aiError' => $result['ai_error'] ?? null,
             'greeting' => $result['greeting'] ?? null,
             'agenda' => $result['agenda'] + ['status' => 'draft', 'show_on_website' => true, 'show_on_tv' => true, 'items' => $result['items']],
             'statuses' => $result['statuses'],

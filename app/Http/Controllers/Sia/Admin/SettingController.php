@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\SchoolSetting;
 use App\Models\WeatherSetting;
+use App\Services\Parser\LlmClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class SettingController extends Controller
 {
-    public function index()
+    public function index(LlmClient $llm)
     {
         $school = SchoolSetting::current();
 
@@ -21,7 +22,7 @@ class SettingController extends Controller
                 'logo_url' => $school->school_logo ? asset('storage/' . $school->school_logo) : null,
             ],
             'weather' => WeatherSetting::current(),
-            'ai' => ['enabled' => (bool) config('sia.ai_parser.enabled')],
+            'ai' => ['enabled' => (bool) config('sia.ai_parser.enabled'), 'driver' => $llm->driver(), 'model' => $llm->model(), 'has_key' => (bool) config('sia.ai_parser.key')],
         ]);
     }
 
@@ -54,6 +55,21 @@ class SettingController extends Controller
         AuditLog::record('update', 'pengaturan', 'Memperbarui identitas sekolah.');
 
         return back()->with('success', 'Identitas sekolah disimpan.');
+    }
+
+    public function testAi(LlmClient $llm)
+    {
+        if (! config('sia.ai_parser.enabled')) {
+            return back()->with('error', 'Parser AI belum diaktifkan (SIA_AI_PARSER=true di .env).');
+        }
+        try {
+            $reply = $llm->complete('Balas hanya dengan satu kata: OK', 'Tes koneksi.', false);
+            AuditLog::record('test', 'pengaturan', 'Menguji koneksi AI (' . $llm->driver() . ').');
+
+            return back()->with('success', 'Koneksi AI berhasil (' . $llm->driver() . ' / ' . $llm->model() . '). Balasan: ' . mb_substr(trim($reply), 0, 40));
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Koneksi AI gagal: ' . mb_substr($e->getMessage(), 0, 220));
+        }
     }
 
     public function updateWeather(Request $request)

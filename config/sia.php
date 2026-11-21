@@ -9,7 +9,10 @@ return [
     // daftarkan di 'class', lalu set SIA_AI_PARSER=true.
     'ai_parser' => [
         'enabled' => env('SIA_AI_PARSER', false),
-        'class' => \App\Services\Parser\NullAiRefiner::class,
+        'driver' => env('SIA_AI_DRIVER', 'anthropic'), // anthropic | openai | gemini
+        'model' => env('SIA_AI_MODEL'),                 // kosong = model bawaan tiap penyedia
+        'key' => env('SIA_AI_KEY'),
+        'class' => \App\Services\Parser\LlmAgendaRefiner::class,
     ],
 
     'youtube' => [

@@ -7,7 +7,7 @@ import ParsingFieldStatus from '../../../../components/sia/parser/ParsingFieldSt
 import Button from '../../../../components/sia/ui/Button.vue'
 
 defineOptions({ layout: AdminLayout })
-const props = defineProps({ logId: Number, original: String, parserType: String, greeting: String, agenda: Object, statuses: Object, summary: Object, existing: Array, categories: Array })
+const props = defineProps({ logId: Number, original: String, parserType: String, aiError: String, greeting: String, agenda: Object, statuses: Object, summary: Object, existing: Array, categories: Array })
 </script>
 
 <template>
@@ -22,8 +22,11 @@ const props = defineProps({ logId: Number, original: String, parserType: String,
         <ParsingFieldStatus state="warn" :label="`${summary.warn} perlu diperiksa`" />
         <ParsingFieldStatus state="missing" :label="`${summary.missing} belum lengkap`" />
         <ParsingFieldStatus v-if="summary.invalid" state="invalid" :label="`${summary.invalid} tidak valid`" />
+        <ParsingFieldStatus v-if="parserType === 'hybrid'" state="ok" label="Dibantu AI" />
         <span class="muted small">Penanda hanya membantu validasi, bukan jaminan benar atau salah.</span>
     </div>
+
+    <p v-if="aiError" class="alert alert--warn" style="margin-bottom: 20px">Pemeriksaan AI tidak dapat dipakai ({{ aiError }}). Hasil di bawah memakai parser aturan.</p>
 
     <p v-if="existing.length" class="alert alert--warn" style="margin-bottom: 20px">
         Sudah ada {{ existing.length }} agenda pada tanggal ini:

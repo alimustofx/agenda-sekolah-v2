@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import AdminLayout from '../../../../components/sia/layout/AdminLayout.vue'
 import PageHeader from '../../../../components/sia/layout/PageHeader.vue'
 import Button from '../../../../components/sia/ui/Button.vue'
@@ -19,6 +19,7 @@ const weather = useForm({
     is_enabled: !!props.weather.is_enabled, cache_duration: props.weather.cache_duration,
 })
 const saveSchool = () => school.post('/admin/pengaturan/sekolah', { forceFormData: true, preserveScroll: true, onSuccess: () => { school.logo = null; school.remove_logo = false } })
+const testAi = () => router.post('/admin/pengaturan/ai/tes', {}, { preserveScroll: true })
 const saveWeather = () => weather.put('/admin/pengaturan/cuaca', { preserveScroll: true })
 </script>
 
@@ -65,7 +66,15 @@ const saveWeather = () => weather.put('/admin/pengaturan/cuaca', { preserveScrol
 
         <section class="panel">
             <div class="panel__head"><h2 class="panel__title">Parser AI</h2></div>
-            <div class="panel__body"><p>Status: <strong>{{ ai.enabled ? 'Aktif' : 'Belum diaktifkan' }}</strong>. Import WhatsApp memakai parser berbasis aturan. Lapisan AI dapat ditambahkan nanti melalui <code>config/sia.php</code> tanpa mengubah alur kerja admin.</p></div>
+            <div class="panel__body stack">
+                <p>Status: <strong>{{ ai.enabled && ai.has_key ? 'Aktif' : 'Belum aktif' }}</strong><template v-if="ai.enabled"> — {{ ai.driver }} / {{ ai.model }}<template v-if="!ai.has_key">, tetapi <code>SIA_AI_KEY</code> belum diisi</template></template>.</p>
+                <p class="muted small">Parser aturan selalu berjalan lebih dulu. AI hanya dipanggil bila tanggal, judul, atau waktu tidak jelas, dan hanya bila admin mengizinkannya saat import. Teks agenda dikirim ke penyedia AI yang dipilih. Semua hasil AI divalidasi dan tetap menjadi draft.</p>
+                <pre class="source-text" style="max-height: none">SIA_AI_PARSER=true
+SIA_AI_DRIVER=anthropic   # anthropic | openai | gemini
+SIA_AI_KEY=...            # jangan dibagikan atau dimasukkan ke git
+# SIA_AI_MODEL=           # opsional</pre>
+                <div><Button :disabled="!ai.enabled" @click="testAi">Uji koneksi AI</Button></div>
+            </div>
         </section>
     </div>
 </template>

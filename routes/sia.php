@@ -90,6 +90,7 @@ Route::middleware(['auth', EnsureActiveAdmin::class, ShareSiaData::class, Securi
         Route::get('pengaturan', [Admin\SettingController::class, 'index'])->name('settings.index');
         Route::post('pengaturan/sekolah', [Admin\SettingController::class, 'updateSchool'])->name('settings.school');
         Route::put('pengaturan/cuaca', [Admin\SettingController::class, 'updateWeather'])->name('settings.weather');
+        Route::post('pengaturan/ai/tes', [Admin\SettingController::class, 'testAi'])->name('settings.ai.test');
 
         Route::get('administrator', [Admin\UserController::class, 'index'])->name('users.index');
         Route::post('administrator', [Admin\UserController::class, 'store'])->name('users.store');

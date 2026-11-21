@@ -6,9 +6,11 @@ import AdminLayout from '../../../../components/sia/layout/AdminLayout.vue'
 import PageHeader from '../../../../components/sia/layout/PageHeader.vue'
 import Button from '../../../../components/sia/ui/Button.vue'
 import Input from '../../../../components/sia/ui/Input.vue'
+import CheckField from '../../../../components/sia/ui/Check.vue'
 
 defineOptions({ layout: AdminLayout })
-const form = useForm({ text: '' })
+defineProps({ aiEnabled: Boolean, aiDriver: String })
+const form = useForm({ text: '', use_ai: true })
 const submit = () => form.post('/admin/agenda/import')
 const steps = ['Membaca teks', 'Mengidentifikasi tanggal', 'Memisahkan kegiatan', 'Menyusun informasi']
 const chars = computed(() => form.text.length)
@@ -20,6 +22,7 @@ const chars = computed(() => form.text.length)
 
     <form v-if="!form.processing" class="stack" style="max-width: 860px" @submit.prevent="submit">
         <Input v-model="form.text" as="textarea" :rows="18" label="Teks agenda dari WhatsApp" placeholder="Tempelkan teks agenda di sini" :error="form.errors.text" style="font-family: inherit" />
+        <CheckField v-if="aiEnabled" v-model="form.use_ai" label="Izinkan AI memeriksa ulang bagian yang meragukan" :description="`Bila ada tanggal, judul, atau waktu yang tidak jelas, teks dikirim ke penyedia AI (${aiDriver}) untuk dibantu. Bagian yang diubah AI tetap ditandai untuk Anda periksa.`" />
         <p class="muted small">Sistem akan mengenali tanggal, kegiatan, waktu, lokasi, dan informasi pendukung. Teks asli tetap disimpan sebagai referensi.</p>
         <div class="row row--between">
             <span class="muted small tnum">{{ chars }} karakter</span>
