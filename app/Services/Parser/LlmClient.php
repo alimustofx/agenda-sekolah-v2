@@ -12,7 +12,7 @@ class LlmClient
     private const DEFAULT_MODELS = [
         'anthropic' => 'claude-haiku-5-5',
         'openai' => 'gpt-4o-mini',
-        'gemini' => 'gemini-2.0-flash',
+        'gemini' => 'gemini-3.8-flash',
     ];
 
     public function driver(): string
